@@ -260,10 +260,94 @@
     .ios-tip.visible { display: block; }
     .ios-tip strong { color: #D4AF37; }
 
-    /* ── RESPONSIVE ── */
-    @media (max-width: 480px) {
-      .top-nav { padding: 16px 20px; }
+    /* ── RESPONSIVE — tablet ── */
+    @media (max-width: 768px) {
+      .top-nav {
+        padding: 16px 20px;
+        gap: 8px;
+      }
+      .btn-nav-ghost, .btn-nav-primary {
+        padding: 8px 16px;
+        font-size: 13px;
+      }
+      .hero {
+        padding: 100px 20px 48px;
+        justify-content: flex-start;
+        padding-top: 110px;
+      }
+      .hero-logo {
+        width: min(380px, 90vw);
+        margin-bottom: 20px;
+      }
+      .hero-uae {
+        font-size: 11px;
+        letter-spacing: .12em;
+        margin-bottom: 28px;
+      }
+      .hero-uae::before, .hero-uae::after { content: '—'; margin: 0 6px; }
+      .track-bar { margin-bottom: 36px; }
+      .gold-line { margin-bottom: 36px; }
       .contact-row { gap: 20px; }
+    }
+
+    /* ── RESPONSIVE — mobile ── */
+    @media (max-width: 480px) {
+      .top-nav { padding: 14px 16px; }
+      .btn-nav-ghost, .btn-nav-primary {
+        padding: 7px 13px;
+        font-size: 12px;
+        border-radius: 5px;
+      }
+      .hero {
+        padding: 90px 16px 40px;
+        min-height: 100svh;
+      }
+      .hero-logo {
+        width: 92vw;
+        margin-bottom: 16px;
+      }
+      .hero::before {
+        width: 300px; height: 200px;
+      }
+      .hero-uae {
+        font-size: 10px;
+        letter-spacing: .1em;
+        margin-bottom: 24px;
+      }
+      .hero-uae::before, .hero-uae::after { display: none; }
+      .track-bar {
+        border-radius: 8px;
+        margin-bottom: 28px;
+      }
+      .track-bar input {
+        font-size: 13px;
+        padding: 13px 14px;
+      }
+      .track-bar button {
+        font-size: 13px;
+        padding: 13px 16px;
+      }
+      .gold-line { margin-bottom: 28px; }
+      .contact-row {
+        flex-direction: column;
+        gap: 14px;
+        align-items: flex-start;
+        padding: 0 8px;
+      }
+      .contact-item { font-size: 13px; }
+      footer { padding: 20px 16px; font-size: 11px; }
+
+      /* PWA banner full width on mobile */
+      .install-banner {
+        bottom: 12px;
+        border-radius: 12px;
+        padding: 12px 14px;
+        gap: 10px;
+      }
+      .install-banner img { width: 36px; height: 36px; border-radius: 8px; }
+      .install-banner-text strong { font-size: 13px; }
+      .install-banner-text span { font-size: 11px; }
+      .btn-install { padding: 7px 13px; font-size: 12px; }
     }
   </style>
 </head>
