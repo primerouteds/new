@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Prime Route</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">▶ Prime Route</div>
+      <div class="logo-sub">Admin Panel</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Main</div>
+        <a href="dashboard.html" class="nav-item active">
+          <span class="nav-icon">◼</span> Dashboard
+        </a>
+        <a href="shipments.html" class="nav-item">
+          <span class="nav-icon">📦</span> Shipments
+        </a>
+        <a href="drivers.html" class="nav-item">
+          <span class="nav-icon">👥</span> Drivers
+        </a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Tools</div>
+        <a href="../tracking.html" class="nav-item" target="_blank">
+          <span class="nav-icon">🔍</span> Public Tracker
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user" id="sidebarUser">
+        <div class="sidebar-avatar" id="sidebarAvatar">A</div>
+        <div>
+          <div class="sidebar-user-name" id="sidebarName">Loading…</div>
+          <div class="sidebar-user-role">Administrator</div>
+        </div>
+      </div>
+      <button class="nav-item" id="logoutBtn" style="width:100%;background:none;border:none;cursor:pointer;text-align:left">
+        <span class="nav-icon">⏏</span> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub" id="dateDisplay"></div>
+      </div>
+      <a href="shipments.html" class="btn btn-primary">+ New Shipment</a>
+    </div>
+
+    <div class="page-body">
+      <!-- Stats -->
+      <div class="stats-grid" style="margin-bottom:24px" id="statsGrid">
+        <div class="stat-card"><div><div class="stat-label">Total Shipments</div><div class="stat-value" id="statTotal">—</div></div><div class="stat-icon">📦</div></div>
+        <div class="stat-card"><div><div class="stat-label">Pending</div><div class="stat-value" id="statPending" style="color:var(--status-pending)">—</div></div><div class="stat-icon" style="background:rgba(245,158,11,.1);color:var(--status-pending)">⏳</div></div>
+        <div class="stat-card"><div><div class="stat-label">In Transit</div><div class="stat-value" id="statTransit" style="color:var(--status-in-transit)">—</div></div><div class="stat-icon" style="background:rgba(139,92,246,.1);color:var(--status-in-transit)">🚚</div></div>
+        <div class="stat-card"><div><div class="stat-label">Delivered</div><div class="stat-value" id="statDelivered" style="color:var(--status-delivered)">—</div></div><div class="stat-icon" style="background:rgba(16,185,129,.1);color:var(--status-delivered)">✓</div></div>
+      </div>
+
+      <!-- Recent shipments -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Recent Shipments</div>
+            <div class="card-subtitle">Last 10 shipments created</div>
+          </div>
+          <a href="shipments.html" class="btn btn-ghost btn-sm">View All</a>
+        </div>
+
+        <div id="recentBody">
+          <div class="loading-center"><div class="spinner"></div> Loading…</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { requireAuth, logout } from '../js/auth.js';
+import { getShipments, getStats } from '../js/shipments.js';
+import { statusBadge, formatDateTime, formatRelativeTime, avatar } from '../js/utils.js';
+
+const { userData } = await requireAuth('admin');
+
+// Sidebar
+document.getElementById('sidebarName').textContent = userData.name || userData.email;
+document.getElementById('sidebarAvatar').textContent = avatar(userData.name || userData.email);
+document.getElementById('logoutBtn').addEventListener('click', () => logout());
+
+// Date
+const now = new Date();
+document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+// Stats
+const stats = await getStats();
+document.getElementById('statTotal').textContent     = stats.total;
+document.getElementById('statPending').textContent   = stats.pending;
+document.getElementById('statTransit').textContent   = stats.in_transit;
+document.getElementById('statDelivered').textContent = stats.delivered;
+
+// Recent shipments
+const shipments = await getShipments({});
+const recent = shipments.slice(0, 10);
+const body = document.getElementById('recentBody');
+
+if (!recent.length) {
+  body.innerHTML = `<div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <div class="empty-title">No shipments yet</div>
+    <div class="empty-sub">Create your first shipment to get started</div>
+    <a href="shipments.html" class="btn btn-primary" style="margin-top:8px">Create Shipment</a>
+  </div>`;
+} else {
+  body.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Tracking #</th><th>Recipient</th><th>Status</th><th>Driver</th><th>Created</th>
+        </tr></thead>
+        <tbody>
+          ${recent.map(s => `
+            <tr>
+              <td class="td-mono">${s.trackingNumber}</td>
+              <td><div style="font-weight:500">${s.recipientName}</div><div style="font-size:11px;color:var(--text-muted)">${s.recipientAddress}</div></td>
+              <td>${statusBadge(s.status)}</td>
+              <td style="color:var(--text-muted)">${s.driverName || '—'}</td>
+              <td style="color:var(--text-muted);font-size:12px">${formatRelativeTime(s.createdAt)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shipments — Prime Route</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-text">▶ Prime Route</div><div class="logo-sub">Admin Panel</div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">◼</span> Dashboard</a>
+        <a href="shipments.html" class="nav-item active"><span class="nav-icon">📦</span> Shipments</a>
+        <a href="drivers.html" class="nav-item"><span class="nav-icon">👥</span> Drivers</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Tools</div>
+        <a href="../tracking.html" class="nav-item" target="_blank"><span class="nav-icon">🔍</span> Public Tracker</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebarAvatar">A</div>
+        <div><div class="sidebar-user-name" id="sidebarName">Loading…</div><div class="sidebar-user-role">Administrator</div></div>
+      </div>
+      <button class="nav-item" id="logoutBtn" style="width:100%;background:none;border:none;cursor:pointer;text-align:left"><span class="nav-icon">⏏</span> Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-title">Shipments</div>
+        <div class="page-sub">Manage all delivery shipments</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('createModal')">+ New Shipment</button>
+    </div>
+
+    <div class="page-body">
+      <!-- Filters -->
+      <div class="filter-bar">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control" id="searchInput" placeholder="Search tracking, recipient…" />
+        </div>
+        <select class="form-control" id="statusFilter" style="max-width:160px">
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="picked_up">Picked Up</option>
+          <option value="in_transit">In Transit</option>
+          <option value="out_for_delivery">Out for Delivery</option>
+          <option value="delivered">Delivered</option>
+          <option value="failed">Failed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" id="refreshBtn">↻ Refresh</button>
+      </div>
+
+      <div class="card">
+        <div id="shipmentsBody">
+          <div class="loading-center"><div class="spinner"></div> Loading shipments…</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Create Shipment Modal ── -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div class="modal-title">New Shipment</div>
+      <button class="modal-close" onclick="closeModal('createModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Sender</div>
+      <div class="form-row cols-2">
+        <div class="form-group"><label class="form-label">Sender Name *</label><input type="text" class="form-control" id="senderName" required /></div>
+        <div class="form-group"><label class="form-label">Sender Phone</label><input type="text" class="form-control" id="senderPhone" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Sender Address *</label><input type="text" class="form-control" id="senderAddress" required /></div>
+
+      <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 12px">Recipient</div>
+      <div class="form-row cols-2">
+        <div class="form-group"><label class="form-label">Recipient Name *</label><input type="text" class="form-control" id="recipientName" required /></div>
+        <div class="form-group"><label class="form-label">Recipient Phone</label><input type="text" class="form-control" id="recipientPhone" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Recipient Address *</label><input type="text" class="form-control" id="recipientAddress" required /></div>
+
+      <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 12px">Package</div>
+      <div class="form-row cols-2">
+        <div class="form-group"><label class="form-label">Weight (kg)</label><input type="text" class="form-control" id="weight" placeholder="e.g. 2.5" /></div>
+        <div class="form-group"><label class="form-label">Est. Delivery Date</label><input type="date" class="form-control" id="estimatedDelivery" /></div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group"><label class="form-label">Description</label><input type="text" class="form-control" id="description" placeholder="Package contents" /></div>
+        <div class="form-group"><label class="form-label">Notes</label><input type="text" class="form-control" id="notes" placeholder="Internal notes" /></div>
+      </div>
+      <div id="createError" class="auth-error" style="margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
+      <button class="btn btn-primary" id="createBtn" onclick="doCreate()">Create Shipment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Assign Driver Modal ── -->
+<div class="modal-overlay" id="assignModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Assign Driver</div>
+      <button class="modal-close" onclick="closeModal('assignModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Assign a driver for shipment <strong id="assignTrackNo" style="color:var(--accent)"></strong></p>
+      <div class="form-group">
+        <label class="form-label">Select Driver *</label>
+        <select class="form-control" id="driverSelect"><option value="">Loading drivers…</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('assignModal')">Cancel</button>
+      <button class="btn btn-primary" id="assignBtn" onclick="doAssign()">Assign Driver</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Update Status Modal ── -->
+<div class="modal-overlay" id="statusModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Update Status</div>
+      <button class="modal-close" onclick="closeModal('statusModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Shipment <strong id="statusTrackNo" style="color:var(--accent)"></strong></p>
+      <div class="form-group">
+        <label class="form-label">New Status *</label>
+        <select class="form-control" id="newStatusSelect">
+          <option value="pending">Pending</option>
+          <option value="picked_up">Picked Up</option>
+          <option value="in_transit">In Transit</option>
+          <option value="out_for_delivery">Out for Delivery</option>
+          <option value="delivered">Delivered</option>
+          <option value="failed">Failed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note (optional)</label>
+        <input type="text" class="form-control" id="statusNote" placeholder="e.g. Arrived at distribution center" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('statusModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="doUpdateStatus()">Update Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── View Details Modal ── -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title">Shipment Details</div>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { requireAuth, logout }         from '../js/auth.js';
+import { getShipments, createShipment, assignDriver,
+         updateShipmentStatus, deleteShipment }  from '../js/shipments.js';
+import { getDrivers }                  from '../js/admin.js';
+import { openModal, closeModal, showToast,
+         statusBadge, formatDateTime, formatRelativeTime, debounce } from '../js/utils.js';
+
+window.openModal = openModal; window.closeModal = closeModal;
+
+const { userData } = await requireAuth('admin');
+document.getElementById('sidebarName').textContent   = userData.name || userData.email;
+document.getElementById('sidebarAvatar').textContent = (userData.name || userData.email || '?').charAt(0).toUpperCase();
+document.getElementById('logoutBtn').addEventListener('click', () => logout());
+
+let allShipments = [];
+let currentAssignId = null;
+let currentStatusId = null;
+let drivers = [];
+
+async function loadShipments() {
+  const search = document.getElementById('searchInput').value;
+  const status = document.getElementById('statusFilter').value;
+  document.getElementById('shipmentsBody').innerHTML = '<div class="loading-center"><div class="spinner"></div> Loading…</div>';
+  try {
+    allShipments = await getShipments({ statusFilter: status, search });
+    renderTable(allShipments);
+  } catch(e) {
+    document.getElementById('shipmentsBody').innerHTML = `<div class="empty-state"><div class="empty-title">Failed to load</div><div class="empty-sub">${e.message}</div></div>`;
+  }
+}
+
+function renderTable(data) {
+  if (!data.length) {
+    document.getElementById('shipmentsBody').innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-title">No shipments found</div>
+      <div class="empty-sub">Try a different filter or create a new shipment.</div>
+    </div>`;
+    return;
+  }
+  document.getElementById('shipmentsBody').innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Tracking #</th><th>Recipient</th><th>Origin</th><th>Status</th><th>Driver</th><th>Created</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          ${data.map(s => `
+            <tr>
+              <td class="td-mono">${s.trackingNumber}</td>
+              <td>
+                <div style="font-weight:500">${s.recipientName}</div>
+                <div style="font-size:11px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.recipientAddress}</div>
+              </td>
+              <td style="color:var(--text-muted);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.senderName}</td>
+              <td>${statusBadge(s.status)}</td>
+              <td style="color:var(--text-muted);font-size:12px">${s.driverName || '<span style="color:var(--text-faint)">Unassigned</span>'}</td>
+              <td style="color:var(--text-muted);font-size:12px;white-space:nowrap">${formatRelativeTime(s.createdAt)}</td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-ghost btn-sm" onclick="viewDetail('${s.id}')">View</button>
+                  <button class="btn btn-ghost btn-sm" onclick="openAssign('${s.id}','${s.trackingNumber}')">Assign</button>
+                  <button class="btn btn-ghost btn-sm" onclick="openStatus('${s.id}','${s.trackingNumber}','${s.status}')">Status</button>
+                  <button class="btn btn-danger btn-sm" onclick="doDelete('${s.id}','${s.trackingNumber}')">✕</button>
+                </div>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:10px 14px;font-size:12px;color:var(--text-faint);border-top:1px solid var(--border)">${data.length} shipment${data.length !== 1 ? 's' : ''}</div>`;
+}
+
+// Load drivers once
+async function ensureDrivers() {
+  if (!drivers.length) drivers = await getDrivers();
+  const sel = document.getElementById('driverSelect');
+  sel.innerHTML = drivers.length
+    ? `<option value="">Select a driver…</option>` + drivers.map(d => `<option value="${d.id}">${d.name} — ${d.email}</option>`).join('')
+    : `<option value="">No drivers found. Add drivers first.</option>`;
+}
+
+window.openAssign = async (id, trackNo) => {
+  currentAssignId = id;
+  document.getElementById('assignTrackNo').textContent = trackNo;
+  await ensureDrivers();
+  openModal('assignModal');
+};
+
+window.openStatus = (id, trackNo, curStatus) => {
+  currentStatusId = id;
+  document.getElementById('statusTrackNo').textContent = trackNo;
+  document.getElementById('newStatusSelect').value = curStatus;
+  openModal('statusModal');
+};
+
+window.doAssign = async () => {
+  const sel = document.getElementById('driverSelect');
+  const driverId = sel.value;
+  if (!driverId) { showToast('Please select a driver', 'warning'); return; }
+  const driver = drivers.find(d => d.id === driverId);
+  const btn = document.getElementById('assignBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    await assignDriver(currentAssignId, driverId, driver.name);
+    showToast('Driver assigned successfully', 'success');
+    closeModal('assignModal');
+    loadShipments();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Assign Driver'; }
+};
+
+window.doUpdateStatus = async () => {
+  const status = document.getElementById('newStatusSelect').value;
+  const note   = document.getElementById('statusNote').value.trim();
+  try {
+    await updateShipmentStatus(currentStatusId, status, note);
+    showToast('Status updated', 'success');
+    closeModal('statusModal');
+    loadShipments();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+};
+
+window.viewDetail = (id) => {
+  const s = allShipments.find(x => x.id === id);
+  if (!s) return;
+  const events = [...(s.events || [])].reverse();
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-panel">
+      <div class="detail-row"><div class="detail-label">Tracking #</div><div class="detail-value td-mono">${s.trackingNumber}</div></div>
+      <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(s.status)}</div></div>
+      <div class="detail-row"><div class="detail-label">Sender</div><div class="detail-value"><strong>${s.senderName}</strong><br><span style="color:var(--text-muted)">${s.senderAddress}</span>${s.senderPhone ? `<br>${s.senderPhone}` : ''}</div></div>
+      <div class="detail-row"><div class="detail-label">Recipient</div><div class="detail-value"><strong>${s.recipientName}</strong><br><span style="color:var(--text-muted)">${s.recipientAddress}</span>${s.recipientPhone ? `<br>${s.recipientPhone}` : ''}</div></div>
+      ${s.weight ? `<div class="detail-row"><div class="detail-label">Weight</div><div class="detail-value">${s.weight} kg</div></div>` : ''}
+      ${s.description ? `<div class="detail-row"><div class="detail-label">Description</div><div class="detail-value">${s.description}</div></div>` : ''}
+      ${s.estimatedDelivery ? `<div class="detail-row"><div class="detail-label">Est. Delivery</div><div class="detail-value">${s.estimatedDelivery}</div></div>` : ''}
+      <div class="detail-row"><div class="detail-label">Driver</div><div class="detail-value">${s.driverName || '<span style="color:var(--text-faint)">Unassigned</span>'}</div></div>
+      ${s.notes ? `<div class="detail-row"><div class="detail-label">Notes</div><div class="detail-value">${s.notes}</div></div>` : ''}
+    </div>
+    ${events.length ? `
+    <div style="margin-top:20px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:10px">Activity</div>
+    <div class="detail-panel">
+      ${events.map(e => `
+        <div class="detail-row">
+          <div class="detail-label">${formatDateTime(e.timestamp)}</div>
+          <div class="detail-value">${statusBadge(e.status)}<span style="margin-left:6px;font-size:12px;color:var(--text-muted)">${e.note || ''}</span></div>
+        </div>`).join('')}
+    </div>` : ''}`;
+  openModal('detailModal');
+};
+
+window.doDelete = async (id, trackNo) => {
+  if (!confirm(`Delete shipment ${trackNo}? This cannot be undone.`)) return;
+  try {
+    await deleteShipment(id);
+    showToast('Shipment deleted', 'success');
+    loadShipments();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+};
+
+window.doCreate = async () => {
+  const errEl = document.getElementById('createError');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('createBtn');
+  const data = {
+    senderName:       document.getElementById('senderName').value.trim(),
+    senderPhone:      document.getElementById('senderPhone').value.trim(),
+    senderAddress:    document.getElementById('senderAddress').value.trim(),
+    recipientName:    document.getElementById('recipientName').value.trim(),
+    recipientPhone:   document.getElementById('recipientPhone').value.trim(),
+    recipientAddress: document.getElementById('recipientAddress').value.trim(),
+    weight:           document.getElementById('weight').value.trim(),
+    estimatedDelivery:document.getElementById('estimatedDelivery').value,
+    description:      document.getElementById('description').value.trim(),
+    notes:            document.getElementById('notes').value.trim(),
+  };
+  if (!data.senderName || !data.senderAddress || !data.recipientName || !data.recipientAddress) {
+    errEl.textContent = 'Please fill in all required fields.'; errEl.style.display = 'block'; return;
+  }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Creating…';
+  try {
+    const created = await createShipment(data);
+    showToast(`Shipment created: ${created.trackingNumber}`, 'success');
+    closeModal('createModal');
+    document.getElementById('createModal').querySelectorAll('input').forEach(i => i.value = '');
+    loadShipments();
+  } catch(e) { errEl.textContent = 'Error: ' + e.message; errEl.style.display = 'block'; }
+  finally { btn.disabled = false; btn.textContent = 'Create Shipment'; }
+};
+
+document.getElementById('searchInput').addEventListener('input', debounce(() => loadShipments(), 400));
+document.getElementById('statusFilter').addEventListener('change', loadShipments);
+document.getElementById('refreshBtn').addEventListener('click', loadShipments);
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
+
+loadShipments();
+</script>
+</body>
+</html>

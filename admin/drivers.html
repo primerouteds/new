@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drivers — Prime Route</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-text">▶ Prime Route</div><div class="logo-sub">Admin Panel</div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">◼</span> Dashboard</a>
+        <a href="shipments.html" class="nav-item"><span class="nav-icon">📦</span> Shipments</a>
+        <a href="drivers.html" class="nav-item active"><span class="nav-icon">👥</span> Drivers</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Tools</div>
+        <a href="../tracking.html" class="nav-item" target="_blank"><span class="nav-icon">🔍</span> Public Tracker</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebarAvatar">A</div>
+        <div><div class="sidebar-user-name" id="sidebarName">Loading…</div><div class="sidebar-user-role">Administrator</div></div>
+      </div>
+      <button class="nav-item" id="logoutBtn" style="width:100%;background:none;border:none;cursor:pointer;text-align:left"><span class="nav-icon">⏏</span> Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-title">Drivers</div>
+        <div class="page-sub">Manage your delivery drivers</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('addDriverModal')">+ Add Driver</button>
+    </div>
+
+    <div class="page-body">
+      <div class="card">
+        <div id="driversBody">
+          <div class="loading-center"><div class="spinner"></div> Loading drivers…</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Add Driver Modal ── -->
+<div class="modal-overlay" id="addDriverModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">Add Driver</div>
+      <button class="modal-close" onclick="closeModal('addDriverModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--text-muted);margin-bottom:18px">
+        ⚠ Creating a driver will sign you out temporarily (Firebase limitation). You will need to sign back in after. 
+        <br><br>
+        <strong>Tip:</strong> You can also add drivers directly in the <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a> (Authentication + add a Firestore <code>users/{uid}</code> doc with <code>role: "driver"</code>).
+      </div>
+      <div class="form-group"><label class="form-label">Full Name *</label><input type="text" class="form-control" id="driverName" placeholder="Driver's full name" /></div>
+      <div class="form-group"><label class="form-label">Email *</label><input type="email" class="form-control" id="driverEmail" placeholder="driver@company.com" /></div>
+      <div class="form-group"><label class="form-label">Password *</label><input type="password" class="form-control" id="driverPassword" placeholder="Temporary password" minlength="6" /></div>
+      <div class="form-group"><label class="form-label">Phone</label><input type="text" class="form-control" id="driverPhone" placeholder="+1 555 000 0000" /></div>
+      <div id="addDriverError" class="auth-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addDriverModal')">Cancel</button>
+      <button class="btn btn-primary" id="addDriverBtn" onclick="doAddDriver()">Create Driver</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Driver Shipments Modal ── -->
+<div class="modal-overlay" id="driverShipmentsModal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title">Driver Shipments — <span id="driverShipmentsName" style="color:var(--accent)"></span></div>
+      <button class="modal-close" onclick="closeModal('driverShipmentsModal')">✕</button>
+    </div>
+    <div class="modal-body" id="driverShipmentsBody"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { requireAuth, logout }                from '../js/auth.js';
+import { getDrivers, createDriverAccount }    from '../js/admin.js';
+import { getShipments }                       from '../js/shipments.js';
+import { openModal, closeModal, showToast,
+         statusBadge, formatDateTime, avatar } from '../js/utils.js';
+
+window.openModal = openModal; window.closeModal = closeModal;
+
+const { userData } = await requireAuth('admin');
+document.getElementById('sidebarName').textContent   = userData.name || userData.email;
+document.getElementById('sidebarAvatar').textContent = avatar(userData.name || userData.email);
+document.getElementById('logoutBtn').addEventListener('click', () => logout());
+
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
+
+async function loadDrivers() {
+  const body = document.getElementById('driversBody');
+  try {
+    const drivers = await getDrivers();
+    if (!drivers.length) {
+      body.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">👤</div>
+        <div class="empty-title">No drivers yet</div>
+        <div class="empty-sub">Add your first driver to start assigning shipments.</div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="openModal('addDriverModal')">Add Driver</button>
+      </div>`;
+      return;
+    }
+    body.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Driver</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${drivers.map(d => `
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div class="sidebar-avatar" style="width:32px;height:32px;font-size:12px">${avatar(d.name)}</div>
+                    <div>
+                      <div style="font-weight:500">${d.name}</div>
+                      <span class="badge badge-driver" style="margin-top:2px">Driver</span>
+                    </div>
+                  </div>
+                </td>
+                <td style="color:var(--text-muted)">${d.email}</td>
+                <td style="color:var(--text-muted)">${d.phone || '—'}</td>
+                <td>
+                  <button class="btn btn-ghost btn-sm" onclick="viewDriverShipments('${d.id}','${d.name.replace(/'/g,"\\'")}')">View Shipments</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:10px 14px;font-size:12px;color:var(--text-faint);border-top:1px solid var(--border)">${drivers.length} driver${drivers.length !== 1 ? 's' : ''}</div>`;
+  } catch(e) {
+    body.innerHTML = `<div class="empty-state"><div class="empty-title">Error loading drivers</div><div class="empty-sub">${e.message}</div></div>`;
+  }
+}
+
+window.viewDriverShipments = async (driverId, driverName) => {
+  document.getElementById('driverShipmentsName').textContent = driverName;
+  document.getElementById('driverShipmentsBody').innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+  openModal('driverShipmentsModal');
+  try {
+    const shipments = await getShipments({ driverId });
+    if (!shipments.length) {
+      document.getElementById('driverShipmentsBody').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">No shipments assigned</div></div>`;
+      return;
+    }
+    document.getElementById('driverShipmentsBody').innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tracking #</th><th>Recipient</th><th>Status</th></tr></thead>
+          <tbody>
+            ${shipments.map(s => `
+              <tr>
+                <td class="td-mono">${s.trackingNumber}</td>
+                <td><div style="font-weight:500">${s.recipientName}</div><div style="font-size:11px;color:var(--text-muted)">${s.recipientAddress}</div></td>
+                <td>${statusBadge(s.status)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    document.getElementById('driverShipmentsBody').innerHTML = `<p style="color:var(--danger);padding:20px">${e.message}</p>`;
+  }
+};
+
+window.doAddDriver = async () => {
+  const errEl = document.getElementById('addDriverError');
+  errEl.style.display = 'none';
+  const name     = document.getElementById('driverName').value.trim();
+  const email    = document.getElementById('driverEmail').value.trim();
+  const password = document.getElementById('driverPassword').value;
+  const phone    = document.getElementById('driverPhone').value.trim();
+  if (!name || !email || !password) { errEl.textContent = 'Name, email and password are required.'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('addDriverBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Creating…';
+  try {
+    await createDriverAccount({ name, email, password, phone });
+    showToast('Driver created! Please sign in again.', 'success');
+    closeModal('addDriverModal');
+    setTimeout(() => { window.location.href = '/login.html'; }, 1500);
+  } catch(e) {
+    const msgs = { 'auth/email-already-in-use': 'That email is already in use.' };
+    errEl.textContent = msgs[e.code] || e.message;
+    errEl.style.display = 'block';
+  } finally { btn.disabled = false; btn.textContent = 'Create Driver'; }
+};
+
+loadDrivers();
+</script>
+</body>
+</html>
