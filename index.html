@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prime Route — Delivery Services UAE</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#D4AF37">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Prime Route">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+
+  <!-- SEO -->
+  <meta name="description" content="Prime Route Delivery Services — Fast. Safe. On Time. Deliveries across the UAE.">
+
   <link rel="stylesheet" href="css/main.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -237,6 +249,13 @@
   document.getElementById('trackInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') doTrack();
   });
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>
