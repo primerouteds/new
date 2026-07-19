@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Deliveries — Prime Route</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div class="app-layout">
+  <!-- Sidebar (driver) -->
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-text">▶ Prime Route</div><div class="logo-sub">Driver Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">My Work</div>
+        <a href="dashboard.html" class="nav-item active"><span class="nav-icon">🚚</span> My Deliveries</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Tools</div>
+        <a href="../tracking.html" class="nav-item" target="_blank"><span class="nav-icon">🔍</span> Public Tracker</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebarAvatar">D</div>
+        <div><div class="sidebar-user-name" id="sidebarName">Loading…</div><div class="sidebar-user-role">Driver</div></div>
+      </div>
+      <button class="nav-item" id="logoutBtn" style="width:100%;background:none;border:none;cursor:pointer;text-align:left"><span class="nav-icon">⏏</span> Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-title">My Deliveries</div>
+        <div class="page-sub" id="driverGreeting">Good day</div>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <!-- Driver Stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+        <div class="stat-card"><div><div class="stat-label">Assigned</div><div class="stat-value" id="statTotal">—</div></div><div class="stat-icon">📋</div></div>
+        <div class="stat-card"><div><div class="stat-label">Active</div><div class="stat-value" id="statActive" style="color:var(--status-in-transit)">—</div></div><div class="stat-icon" style="background:rgba(139,92,246,.1);color:var(--status-in-transit)">🚚</div></div>
+        <div class="stat-card"><div><div class="stat-label">Delivered</div><div class="stat-value" id="statDelivered" style="color:var(--status-delivered)">—</div></div><div class="stat-icon" style="background:rgba(16,185,129,.1);color:var(--status-delivered)">✓</div></div>
+      </div>
+
+      <!-- Filter -->
+      <div class="filter-bar">
+        <select class="form-control" id="statusFilter" style="max-width:180px">
+          <option value="all">All Shipments</option>
+          <option value="picked_up">Picked Up</option>
+          <option value="in_transit">In Transit</option>
+          <option value="out_for_delivery">Out for Delivery</option>
+          <option value="delivered">Delivered</option>
+          <option value="failed">Failed</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" id="refreshBtn">↻ Refresh</button>
+      </div>
+
+      <!-- Deliveries grid -->
+      <div id="deliveriesBody">
+        <div class="loading-center"><div class="spinner"></div> Loading deliveries…</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Update Status Modal ── -->
+<div class="modal-overlay" id="updateModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Update Delivery Status</div>
+      <button class="modal-close" onclick="closeModal('updateModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Shipment</div>
+        <div class="td-mono" style="font-size:15px" id="updateTrackNo"></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="updateRecipient"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Status *</label>
+        <select class="form-control" id="newStatus">
+          <option value="in_transit">In Transit</option>
+          <option value="out_for_delivery">Out for Delivery</option>
+          <option value="delivered">Delivered</option>
+          <option value="failed">Failed / Attempted</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note (optional)</label>
+        <input type="text" class="form-control" id="updateNote" placeholder="e.g. Left at front door" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('updateModal')">Cancel</button>
+      <button class="btn btn-primary" id="updateBtn" onclick="doUpdate()">Update Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Detail Modal ── -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">Shipment Details</div>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { requireAuth, logout }              from '../js/auth.js';
+import { getDriverShipments, updateDeliveryStatus, getDriverStats } from '../js/driver.js';
+import { openModal, closeModal, showToast,
+         statusBadge, formatDateTime, formatRelativeTime, avatar, STATUS_LABELS } from '../js/utils.js';
+
+window.openModal = openModal; window.closeModal = closeModal;
+
+const { user, userData } = await requireAuth('driver');
+document.getElementById('sidebarName').textContent   = userData.name || userData.email;
+document.getElementById('sidebarAvatar').textContent = avatar(userData.name || userData.email);
+document.getElementById('logoutBtn').addEventListener('click', () => logout());
+
+const h = new Date().getHours();
+document.getElementById('driverGreeting').textContent =
+  `Good ${h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'}, ${(userData.name || '').split(' ')[0]}`;
+
+let shipments = [];
+let currentUpdateId = null;
+
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
+
+async function loadStats() {
+  const stats = await getDriverStats(user.uid);
+  document.getElementById('statTotal').textContent     = stats.total;
+  document.getElementById('statActive').textContent    = stats.active;
+  document.getElementById('statDelivered').textContent = stats.delivered;
+}
+
+async function loadDeliveries() {
+  const body = document.getElementById('deliveriesBody');
+  const filter = document.getElementById('statusFilter').value;
+  body.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+  try {
+    shipments = await getDriverShipments(user.uid, filter);
+    if (!shipments.length) {
+      body.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">No deliveries found</div>
+        <div class="empty-sub">No shipments match this filter. Your admin will assign deliveries to you.</div>
+      </div>`;
+      return;
+    }
+
+    const activeFirst = [...shipments].sort((a,b) => {
+      const order = ['out_for_delivery','in_transit','picked_up','pending','delivered','failed','cancelled'];
+      return order.indexOf(a.status) - order.indexOf(b.status);
+    });
+
+    body.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
+      ${activeFirst.map(s => {
+        const isDone = s.status === 'delivered' || s.status === 'failed' || s.status === 'cancelled';
+        return `
+        <div class="card" style="${isDone ? 'opacity:0.6' : ''}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+            <div class="td-mono" style="font-size:13px">${s.trackingNumber}</div>
+            ${statusBadge(s.status)}
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px">Deliver to</div>
+            <div style="font-size:14px;font-weight:500">${s.recipientName}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${s.recipientAddress}</div>
+            ${s.recipientPhone ? `<div style="font-size:12px;color:var(--accent)">📞 ${s.recipientPhone}</div>` : ''}
+          </div>
+
+          ${s.estimatedDelivery ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">🗓 Est. delivery: ${s.estimatedDelivery}</div>` : ''}
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${!isDone ? `<button class="btn btn-primary btn-sm" onclick="openUpdate('${s.id}','${s.trackingNumber}','${s.recipientName.replace(/'/g,"\\'")}')">Update Status</button>` : ''}
+            <button class="btn btn-ghost btn-sm" onclick="viewDetail('${s.id}')">Details</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-faint)">${shipments.length} delivery record${shipments.length !== 1 ? 's' : ''}</div>`;
+  } catch(e) {
+    body.innerHTML = `<div class="empty-state"><div class="empty-title">Error</div><div class="empty-sub">${e.message}</div></div>`;
+  }
+}
+
+window.openUpdate = (id, trackNo, recipient) => {
+  currentUpdateId = id;
+  document.getElementById('updateTrackNo').textContent   = trackNo;
+  document.getElementById('updateRecipient').textContent = recipient;
+  const s = shipments.find(x => x.id === id);
+  if (s) {
+    const nextMap = { picked_up: 'in_transit', in_transit: 'out_for_delivery', out_for_delivery: 'delivered' };
+    document.getElementById('newStatus').value = nextMap[s.status] || 'delivered';
+  }
+  openModal('updateModal');
+};
+
+window.doUpdate = async () => {
+  const status = document.getElementById('newStatus').value;
+  const note   = document.getElementById('updateNote').value.trim();
+  const btn    = document.getElementById('updateBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    await updateDeliveryStatus(currentUpdateId, user.uid, status, note);
+    showToast(`Status updated: ${STATUS_LABELS[status]}`, 'success');
+    closeModal('updateModal');
+    document.getElementById('updateNote').value = '';
+    loadDeliveries();
+    loadStats();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Update Status'; }
+};
+
+window.viewDetail = (id) => {
+  const s = shipments.find(x => x.id === id);
+  if (!s) return;
+  const events = [...(s.events || [])].reverse();
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-panel">
+      <div class="detail-row"><div class="detail-label">Tracking #</div><div class="detail-value td-mono">${s.trackingNumber}</div></div>
+      <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value">${statusBadge(s.status)}</div></div>
+      <div class="detail-row"><div class="detail-label">Recipient</div><div class="detail-value"><strong>${s.recipientName}</strong><br><span style="color:var(--text-muted)">${s.recipientAddress}</span>${s.recipientPhone ? `<br><span style="color:var(--accent)">📞 ${s.recipientPhone}</span>` : ''}</div></div>
+      <div class="detail-row"><div class="detail-label">From</div><div class="detail-value">${s.senderName}<br><span style="color:var(--text-muted)">${s.senderAddress}</span></div></div>
+      ${s.weight ? `<div class="detail-row"><div class="detail-label">Weight</div><div class="detail-value">${s.weight} kg</div></div>` : ''}
+      ${s.description ? `<div class="detail-row"><div class="detail-label">Contents</div><div class="detail-value">${s.description}</div></div>` : ''}
+      ${s.estimatedDelivery ? `<div class="detail-row"><div class="detail-label">Est. Delivery</div><div class="detail-value">${s.estimatedDelivery}</div></div>` : ''}
+      ${s.notes ? `<div class="detail-row"><div class="detail-label">Notes</div><div class="detail-value">${s.notes}</div></div>` : ''}
+    </div>
+    ${events.length ? `
+    <div style="margin-top:20px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:10px">History</div>
+    <div class="detail-panel">
+      ${events.map(e => `<div class="detail-row">
+        <div class="detail-label">${formatDateTime(e.timestamp)}</div>
+        <div class="detail-value">${statusBadge(e.status)}<span style="margin-left:6px;font-size:12px;color:var(--text-muted)">${e.note||''}</span></div>
+      </div>`).join('')}
+    </div>` : ''}`;
+  openModal('detailModal');
+};
+
+document.getElementById('statusFilter').addEventListener('change', loadDeliveries);
+document.getElementById('refreshBtn').addEventListener('click', () => { loadDeliveries(); loadStats(); });
+
+loadStats();
+loadDeliveries();
+</script>
+</body>
+</html>
