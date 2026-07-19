@@ -196,6 +196,70 @@
       letter-spacing: .04em;
     }
 
+    /* ── PWA INSTALL BANNER ── */
+    .install-banner {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #111827;
+      border: 1px solid rgba(212,175,55,0.4);
+      border-radius: 14px;
+      padding: 14px 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      align-items: center;
+      gap: 14px;
+      z-index: 100;
+      width: min(420px, 92vw);
+      animation: slideUp .3s ease;
+    }
+    .install-banner.visible { display: flex; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    .install-banner img { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
+    .install-banner-text { flex: 1; }
+    .install-banner-text strong { display: block; font-size: 14px; color: #fff; margin-bottom: 2px; }
+    .install-banner-text span { font-size: 12px; color: rgba(255,255,255,0.5); }
+    .install-banner-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-install {
+      background: #D4AF37; color: #070B14; border: none;
+      padding: 8px 16px; border-radius: 7px; font-size: 13px;
+      font-weight: 700; cursor: pointer; white-space: nowrap;
+      transition: opacity .2s;
+    }
+    .btn-install:hover { opacity: .88; }
+    .btn-dismiss {
+      background: transparent; color: rgba(255,255,255,0.4);
+      border: none; font-size: 18px; cursor: pointer; line-height: 1;
+      padding: 4px 6px;
+    }
+    .btn-dismiss:hover { color: #fff; }
+
+    /* iOS tip */
+    .ios-tip {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #111827;
+      border: 1px solid rgba(212,175,55,0.4);
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+      text-align: center;
+      line-height: 1.6;
+      z-index: 100;
+      width: min(320px, 92vw);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .ios-tip.visible { display: block; }
+    .ios-tip strong { color: #D4AF37; }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 480px) {
       .top-nav { padding: 16px 20px; }
@@ -227,9 +291,9 @@
 
   <!-- Contact -->
   <div class="contact-row">
-    <a href="mailto:info@primeroute.ae" class="contact-item">
+    <a href="mailto:info@primerouteds.ae" class="contact-item">
       <div class="contact-icon">✉</div>
-      <span>info@primeroute.ae</span>
+      <span>info@primerouteds.ae</span>
     </a>
     <a href="tel:+971561225005" class="contact-item">
       <div class="contact-icon">📞</div>
@@ -237,6 +301,25 @@
     </a>
   </div>
 </section>
+
+<!-- PWA Install Banner (Android / Desktop Chrome) -->
+<div class="install-banner" id="installBanner">
+  <img src="img/icon-192.png" alt="Prime Route icon">
+  <div class="install-banner-text">
+    <strong>Install Prime Route</strong>
+    <span>Add to your home screen for quick access</span>
+  </div>
+  <div class="install-banner-actions">
+    <button class="btn-install" id="installBtn">Install</button>
+    <button class="btn-dismiss" id="dismissBtn" title="Dismiss">✕</button>
+  </div>
+</div>
+
+<!-- iOS tip (shown once on Safari/iPhone) -->
+<div class="ios-tip" id="iosTip">
+  Tap <strong>Share ↑</strong> then <strong>"Add to Home Screen"</strong><br>to install Prime Route on your iPhone.
+  <br><br><button class="btn-dismiss" id="iosDismiss" style="display:inline;font-size:13px;color:#D4AF37">Got it</button>
+</div>
 
 <footer>© 2025 Prime Route Delivery Services. All rights reserved.</footer>
 
@@ -250,12 +333,51 @@
     if (e.key === 'Enter') doTrack();
   });
 
-  // Register service worker
+  // ── Service Worker ──
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
   }
+
+  // ── PWA Install ──
+  let deferredPrompt = null;
+  const banner   = document.getElementById('installBanner');
+  const iosTip   = document.getElementById('iosTip');
+
+  // Android / Desktop Chrome
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!localStorage.getItem('pwa-dismissed')) {
+      banner.classList.add('visible');
+    }
+  });
+
+  document.getElementById('installBtn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    banner.classList.remove('visible');
+  });
+
+  document.getElementById('dismissBtn').addEventListener('click', () => {
+    banner.classList.remove('visible');
+    localStorage.setItem('pwa-dismissed', '1');
+  });
+
+  // iOS Safari — show tip once
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInStandaloneMode = ('standalone' in navigator) && navigator.standalone;
+  if (isIos && !isInStandaloneMode && !localStorage.getItem('ios-tip-dismissed')) {
+    setTimeout(() => iosTip.classList.add('visible'), 1500);
+  }
+
+  document.getElementById('iosDismiss').addEventListener('click', () => {
+    iosTip.classList.remove('visible');
+    localStorage.setItem('ios-tip-dismissed', '1');
+  });
 </script>
 </body>
 </html>
