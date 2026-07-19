@@ -3,118 +3,240 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prime Route — Delivery Management</title>
+  <title>Prime Route — Delivery Services UAE</title>
   <link rel="stylesheet" href="css/main.css">
   <style>
-    .hero-subtitle-tag {
-      display: inline-block; background: var(--accent-dim); border: 1px solid var(--accent-dim-2);
-      border-radius: 20px; padding: 4px 14px; font-size: 12px; color: var(--accent); font-weight: 500; margin-bottom: 22px;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #070B14;
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAV ── */
+    .top-nav {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding: 24px 40px;
+      position: absolute;
+      top: 0; right: 0;
+      z-index: 10;
+    }
+
+    .btn-nav-ghost {
+      background: transparent;
+      border: 1px solid rgba(212,175,55,0.4);
+      color: #D4AF37;
+      padding: 9px 22px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background .2s, border-color .2s;
+    }
+    .btn-nav-ghost:hover { background: rgba(212,175,55,0.08); border-color: #D4AF37; }
+
+    .btn-nav-primary {
+      background: #D4AF37;
+      border: 1px solid #D4AF37;
+      color: #070B14;
+      padding: 9px 22px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+    .btn-nav-primary:hover { opacity: .88; }
+
+    /* ── HERO ── */
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 60px;
+      position: relative;
+    }
+
+    /* subtle radial glow behind logo */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse at center, rgba(212,175,55,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-logo {
+      width: min(480px, 88vw);
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-uae {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: #D4AF37;
+      margin-bottom: 40px;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-uae::before, .hero-uae::after {
+      content: '——';
+      margin: 0 10px;
+      opacity: .5;
+    }
+
+    /* ── TRACK BAR ── */
+    .track-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(212,175,55,0.25);
+      border-radius: 10px;
+      overflow: hidden;
+      width: min(520px, 92vw);
+      margin-bottom: 48px;
+      position: relative;
+      z-index: 1;
+    }
+    .track-bar input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 14px;
+      padding: 14px 18px;
+    }
+    .track-bar input::placeholder { color: rgba(255,255,255,0.3); }
+    .track-bar button {
+      background: #D4AF37;
+      border: none;
+      color: #070B14;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 14px 24px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity .2s;
+    }
+    .track-bar button:hover { opacity: .88; }
+
+    /* ── DIVIDER ── */
+    .gold-line {
+      width: 60px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+      margin: 0 auto 48px;
+    }
+
+    /* ── CONTACT ── */
+    .contact-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: rgba(255,255,255,0.65);
+      font-size: 14px;
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .contact-item:hover { color: #D4AF37; }
+    .contact-icon {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(212,175,55,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: rgba(255,255,255,0.2);
+      font-size: 12px;
+      letter-spacing: .04em;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .top-nav { padding: 16px 20px; }
+      .contact-row { gap: 20px; }
     }
   </style>
 </head>
 <body>
 
 <!-- Nav -->
-<nav class="landing-nav">
-  <span class="landing-logo">▶ Prime Route</span>
-  <div style="display:flex;align-items:center;gap:12px">
-    <a href="tracking.html" class="btn btn-ghost btn-sm">Track Shipment</a>
-    <a href="login.html" class="btn btn-primary btn-sm">Sign In</a>
-  </div>
+<nav class="top-nav">
+  <a href="tracking.html" class="btn-nav-ghost">Track Shipment</a>
+  <a href="login.html" class="btn-nav-primary">Sign In</a>
 </nav>
 
 <!-- Hero -->
-<section class="hero-section">
-  <div style="max-width:700px">
-    <div class="hero-subtitle-tag">🚚 Enterprise Delivery Management</div>
-    <h1 class="hero-title">Deliver faster.<br>Track <span>smarter</span>.</h1>
-    <p class="hero-sub">Prime Route gives your team complete visibility over every shipment — from warehouse to doorstep. Manage drivers, track deliveries, and delight customers in real time.</p>
-    <div class="hero-actions">
-      <a href="login.html" class="btn btn-primary btn-lg">Get Started</a>
-      <a href="tracking.html" class="btn btn-secondary btn-lg">Track a Package</a>
-    </div>
+<section class="hero">
+  <img src="img/logo-full.jpg" alt="Prime Route Delivery Services" class="hero-logo" />
 
-    <!-- Quick track -->
-    <div class="hero-track">
-      <span style="color:var(--text-faint);font-size:15px">📦</span>
-      <input type="text" id="heroTrackInput" placeholder="Enter tracking number  e.g. PRD-ABCD-1234" />
-      <button class="btn btn-primary" onclick="heroTrack()">Track</button>
-    </div>
+  <div class="hero-uae">Deliveries across the UAE</div>
+
+  <!-- Track input -->
+  <div class="track-bar">
+    <input type="text" id="trackInput" placeholder="Enter your tracking number…" />
+    <button onclick="doTrack()">Track →</button>
+  </div>
+
+  <div class="gold-line"></div>
+
+  <!-- Contact -->
+  <div class="contact-row">
+    <a href="mailto:info@primeroute.ae" class="contact-item">
+      <div class="contact-icon">✉</div>
+      <span>info@primeroute.ae</span>
+    </a>
+    <a href="tel:+971561225005" class="contact-item">
+      <div class="contact-icon">📞</div>
+      <span>+971 56 122 5005</span>
+    </a>
   </div>
 </section>
 
-<!-- Features -->
-<section class="features-section" style="max-width:1200px;margin:0 auto">
-  <div style="text-align:center;max-width:520px;margin:0 auto">
-    <div class="section-label">Why Prime Route</div>
-    <h2 class="section-title">Everything you need to run deliveries</h2>
-    <p class="section-sub">Built for logistics teams that need reliable tools, not bloated software.</p>
-  </div>
-
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon">📍</div>
-      <div class="feature-title">Real-Time Tracking</div>
-      <p class="feature-desc">Customers and admins see live status updates at every step — from picked up to doorstep delivery.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">👥</div>
-      <div class="feature-title">Driver Management</div>
-      <p class="feature-desc">Assign shipments to drivers, monitor workloads, and keep your fleet organized from one dashboard.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <div class="feature-title">Admin Dashboard</div>
-      <p class="feature-desc">Full visibility into all active shipments, delivery stats, and performance metrics in one place.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔒</div>
-      <div class="feature-title">Role-Based Access</div>
-      <p class="feature-desc">Admins and drivers each have tailored interfaces — no feature confusion, no access leaks.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📱</div>
-      <div class="feature-title">Driver App</div>
-      <p class="feature-desc">Drivers see only their assigned deliveries and can update status on the go — no friction.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">⚡</div>
-      <div class="feature-title">Instant Updates</div>
-      <p class="feature-desc">Powered by Firebase — status changes appear in seconds, no manual refreshing required.</p>
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section class="cta-section">
-  <div class="section-label">Ready to ship?</div>
-  <h2 class="section-title" style="margin-bottom:14px">Start managing deliveries today</h2>
-  <p style="color:var(--text-muted);margin-bottom:32px;font-size:15px">Set up your Firebase project, deploy, and your team is live in minutes.</p>
-  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <a href="login.html" class="btn btn-primary btn-lg">Sign In to Dashboard</a>
-    <a href="tracking.html" class="btn btn-secondary btn-lg">Public Tracking</a>
-  </div>
-</section>
-
-<!-- Footer -->
-<footer class="landing-footer">
-  <span class="landing-logo" style="font-size:15px">▶ Prime Route</span>
-  <span>© 2025 Prime Route Delivery. All rights reserved.</span>
-  <div style="display:flex;gap:16px">
-    <a href="tracking.html" style="color:var(--text-faint)">Track</a>
-    <a href="login.html" style="color:var(--text-faint)">Admin Login</a>
-  </div>
-</footer>
+<footer>© 2025 Prime Route Delivery Services. All rights reserved.</footer>
 
 <script>
-function heroTrack() {
-  const val = document.getElementById('heroTrackInput').value.trim();
-  if (!val) return;
-  window.location.href = `tracking.html?t=${encodeURIComponent(val)}`;
-}
-document.getElementById('heroTrackInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') heroTrack();
-});
+  function doTrack() {
+    const val = document.getElementById('trackInput').value.trim();
+    if (!val) return;
+    window.location.href = 'tracking.html?t=' + encodeURIComponent(val);
+  }
+  document.getElementById('trackInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doTrack();
+  });
 </script>
 </body>
 </html>
