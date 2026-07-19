@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Your Shipment — Prime Route</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="tracking-page">
+
+  <!-- Top nav -->
+  <div style="width:100%;max-width:720px;display:flex;align-items:center;justify-content:space-between;margin-bottom:40px">
+    <a href="index.html" class="tracking-logo" style="margin-bottom:0">▶ Prime Route</a>
+    <a href="login.html" class="btn btn-ghost btn-sm">Staff Login</a>
+  </div>
+
+  <!-- Hero -->
+  <div class="tracking-hero">
+    <h1 style="font-size:clamp(24px,4vw,36px);font-weight:800;margin-bottom:8px">Track Your Package</h1>
+    <p style="color:var(--text-muted);font-size:14px">Enter your tracking number to see real-time delivery status</p>
+  </div>
+
+  <!-- Search -->
+  <div class="tracking-search" style="margin-bottom:32px">
+    <div style="display:flex;gap:8px">
+      <input type="text" id="trackingInput" class="form-control" placeholder="PRD-XXXX-XXXX"
+        style="font-size:15px;letter-spacing:.05em" autocomplete="off" />
+      <button class="btn btn-primary" id="trackBtn" onclick="doTrack()">Track</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-faint);margin-top:8px;text-align:center">
+      Example: PRD-ABCD-1234
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="tracking-result" id="trackingResult"></div>
+
+</div>
+
+<script type="module">
+import { trackShipment, renderTrackingResult } from './js/tracking.js';
+
+const input  = document.getElementById('trackingInput');
+const btn    = document.getElementById('trackBtn');
+const result = document.getElementById('trackingResult');
+
+async function doTrack() {
+  const val = input.value.trim();
+  if (!val) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  result.innerHTML = '';
+
+  try {
+    const shipment = await trackShipment(val);
+    renderTrackingResult(shipment, result);
+  } catch (err) {
+    result.innerHTML = `<div class="card" style="color:var(--danger);text-align:center;padding:32px">
+      Unable to fetch tracking info. Please try again.</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Track';
+  }
+}
+
+window.doTrack = doTrack;
+input.addEventListener('keydown', e => { if (e.key === 'Enter') doTrack(); });
+
+// Auto-track from URL param
+const params = new URLSearchParams(window.location.search);
+const t = params.get('t');
+if (t) { input.value = t; doTrack(); }
+</script>
+</body>
+</html>

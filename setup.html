@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>First-Time Setup — Prime Route</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card" style="max-width:460px">
+    <a href="index.html" style="text-decoration:none">
+      <div class="auth-logo">▶ Prime Route</div>
+    </a>
+    <div class="auth-title">First-Time Setup</div>
+    <div class="auth-subtitle" style="margin-bottom:16px">Create the initial administrator account. This page is only usable once — if an admin already exists you will be redirected.</div>
+
+    <div style="background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--accent);margin-bottom:20px">
+      ⚠ Delete or restrict access to this page after setup.
+    </div>
+
+    <div class="auth-error" id="setupError"></div>
+    <div id="successMsg" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:var(--radius);padding:12px 14px;font-size:13px;color:#6ee7b7;margin-bottom:16px"></div>
+
+    <form id="setupForm">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-control" id="name" placeholder="Your full name" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input type="email" class="form-control" id="email" placeholder="admin@company.com" required autocomplete="email" />
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" placeholder="At least 6 characters" required minlength="6" />
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%" id="setupBtn">
+        Create Admin Account
+      </button>
+    </form>
+
+    <div style="margin-top:16px;text-align:center;font-size:12px;color:var(--text-faint)">
+      Already have an account? <a href="login.html">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db }          from './js/firebase.js';
+import { adminExists }       from './js/admin.js';
+import { createUserWithEmailAndPassword }
+                             from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { doc, setDoc, serverTimestamp }
+                             from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const form    = document.getElementById('setupForm');
+const errEl   = document.getElementById('setupError');
+const successEl = document.getElementById('successMsg');
+const btn     = document.getElementById('setupBtn');
+
+// Check if admin already exists
+(async () => {
+  try {
+    if (await adminExists()) {
+      window.location.href = '/login.html';
+    }
+  } catch(e) {
+    // Firestore might not be set up yet — allow setup to proceed
+  }
+})();
+
+function showError(msg) { errEl.textContent = msg; errEl.style.display = 'block'; }
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Creating…';
+
+  const name     = document.getElementById('name').value.trim();
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, 'users', cred.user.uid), {
+      name, email, role: 'admin',
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    successEl.textContent = '✓ Admin account created! Redirecting to login…';
+    successEl.style.display = 'block';
+    form.style.display = 'none';
+    setTimeout(() => { window.location.href = '/login.html'; }, 2000);
+  } catch (err) {
+    const msgs = {
+      'auth/email-already-in-use': 'That email is already registered.',
+      'auth/weak-password': 'Password must be at least 6 characters.',
+    };
+    showError(msgs[err.code] || err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create Admin Account';
+  }
+});
+</script>
+</body>
+</html>

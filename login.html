@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — Prime Route</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <a href="index.html" style="text-decoration:none">
+      <div class="auth-logo">▶ Prime Route</div>
+    </a>
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-subtitle" style="margin-bottom:24px">Sign in to your account to continue</div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input type="email" class="form-control" id="email" placeholder="you@company.com" required autocomplete="email" />
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" placeholder="••••••••" required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%" id="loginBtn">
+        Sign In
+      </button>
+    </form>
+
+    <div style="margin-top:20px;text-align:center;font-size:12px;color:var(--text-faint)">
+      Need to set up? <a href="setup.html">Create first admin account</a>
+    </div>
+    <div style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-faint)">
+      <a href="tracking.html" style="color:var(--text-faint)">← Track a shipment</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { login }        from './js/auth.js';
+import { getUserData }  from './js/auth.js';
+
+const form    = document.getElementById('loginForm');
+const errEl   = document.getElementById('authError');
+const btn     = document.getElementById('loginBtn');
+
+function showError(msg) {
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in…';
+
+  try {
+    const user     = await login(
+      document.getElementById('email').value.trim(),
+      document.getElementById('password').value
+    );
+    const userData = await getUserData(user.uid);
+    if (!userData) { showError('Account not configured. Contact your administrator.'); return; }
+
+    if (userData.role === 'admin')       window.location.href = '/admin/dashboard.html';
+    else if (userData.role === 'driver') window.location.href = '/driver/dashboard.html';
+    else showError('Unknown role. Contact your administrator.');
+  } catch (err) {
+    const msgs = {
+      'auth/user-not-found':  'No account found with that email.',
+      'auth/wrong-password':  'Incorrect password.',
+      'auth/invalid-credential': 'Invalid email or password.',
+      'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    };
+    showError(msgs[err.code] || err.message || 'Sign in failed. Please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+});
+</script>
+</body>
+</html>
