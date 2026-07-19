@@ -1,0 +1,47 @@
+:root {
+  /* Core palette */
+  --bg: #070B14;
+  --surface: #0F172A;
+  --surface-2: #1E293B;
+  --surface-3: #334155;
+  --border: #1E293B;
+  --border-2: #334155;
+
+  /* Text */
+  --text: #F8FAFC;
+  --text-muted: #94A3B8;
+  --text-faint: #475569;
+
+  /* Brand */
+  --primary: #0F172A;
+  --accent: #D4AF37;
+  --accent-hover: #E8C547;
+  --accent-dim: rgba(212, 175, 55, 0.12);
+  --accent-dim-2: rgba(212, 175, 55, 0.25);
+
+  /* Status colors */
+  --status-pending: #F59E0B;
+  --status-picked-up: #3B82F6;
+  --status-in-transit: #8B5CF6;
+  --status-out-for-delivery: #F97316;
+  --status-delivered: #10B981;
+  --status-failed: #EF4444;
+  --status-cancelled: #6B7280;
+
+  /* Semantic */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+
+  /* Dimensions */
+  --sidebar-w: 240px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Shadows */
+  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3);
+  --shadow-accent: 0 0 20px rgba(212,175,55,0.15);
+}
